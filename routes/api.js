@@ -59,10 +59,20 @@ module.exports = function (app) {
       }else if(puzzle.match(/[^0-9.]/g)){
         res.json({ error: 'Invalid characters in puzzle' })
         return;
+      }else{
+        let grid = solver.stringToGrid(puzzle)
+        let solution = solver.solve(grid)
+        if(solution == false) {
+          res.json("didn't work")
+        }else{
+          console.log(solution)
+          res.json({solution: solution})
+        }
+        
       }
       
-      // console.log(puzzlesAndSolutions.puzzlesAndSolutions[0][0])
-
+      
+      // console.log(solver.solve(puzzle))
       // let gridded = solver.stringToGrid(puzzlesAndSolutions.puzzlesAndSolutions[0][0])
       // console.log(gridded)
     });
