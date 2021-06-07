@@ -13,14 +13,16 @@ module.exports = function (app) {
       const {value} = req.body;
       const {puzzle} = req.body;
       // let number = coordinate.match(/[.\d\/]+/g);
-
+    
       let coordinateArray = ['A','B','C','D','E','F','G','H','I']; 
       let numbersArray = ['1','2','3','4','5','6','7','8','9'];
-      let letter;
       // if(coordinate && parseInt(coordinate) != NaN){
       //   let letter = coordinate.match(/[a-zA-Z]+/g);
       //   console.log(letter[0].toUpperCase())
       // }
+      let grid = solver.stringToGrid(puzzle)
+      let rowNum = solver.letterToNumber(coordinate[0].toUpperCase())
+      let colNum = parseInt(coordinate[1])
 
       if(!coordinate || !value || !puzzle){
         res.json({ error: 'Required field(s) missing' })
@@ -40,8 +42,19 @@ module.exports = function (app) {
         numbersArray.indexOf(value) < 0){
           res.json({ error: 'Invalid value' })
           return;
+      }
+      else if(!solver.checkRowPlacement(grid, rowNum, colNum, value)
+      || !solver.checkColPlacement(grid, rowNum, colNum, value)
+      || !solver.checkRegionPlacement(grid, rowNum, colNum, value)){
+        let invalidCheckResponse = {valid:false, conflict:[]}
+        if(!solver.checkRowPlacement(grid, rowNum, colNum, value)){
+          // invalidCheckResponse.conflict.push("row")
+          console.log("bad row")
+        }
+
+        // res.json(invalidCheckResponse)
       }else{
-        res.json('success')
+        res.json({"valid":true})
         return;
       }
 
@@ -61,12 +74,14 @@ module.exports = function (app) {
         return;
       }else{
         let grid = solver.stringToGrid(puzzle)
-        let solution = solver.solve(grid)
-        if(solution == false) {
-          res.json("didn't work")
+        let result = solver.solve(grid)
+        if(result == false) {
+          res.json({ error: 'Puzzle cannot be solved' })
+          return;
         }else{
-          console.log(solution)
-          res.json({solution: solution})
+          console.log(result)
+          res.json({solution: result})
+          return;
         }
         
       }
