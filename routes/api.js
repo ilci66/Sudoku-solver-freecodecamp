@@ -1,94 +1,41 @@
 'use strict';
 
 const SudokuSolver = require('../controllers/sudoku-solver.js');
-const puzzlesAndSolutions = require('../controllers/puzzle-strings.js')
 
 module.exports = function (app) {
-  
-  let solver = new SudokuSolver();
 
-  app.route('/api/check')
+  let sudokuSolver = new SudokuSolver();
+
+  app.route('/api/solve')
     .post((req, res) => {
-      const {coordinate} = req.body;
-      const {value} = req.body;
-      const {puzzle} = req.body;
-      // let number = coordinate.match(/[.\d\/]+/g);
-    
-      let coordinateArray = ['A','B','C','D','E','F','G','H','I']; 
-      let numbersArray = ['1','2','3','4','5','6','7','8','9'];
-      // if(coordinate && parseInt(coordinate) != NaN){
-      //   let letter = coordinate.match(/[a-zA-Z]+/g);
-      //   console.log(letter[0].toUpperCase())
-      // }
-      let grid = solver.stringToGrid(puzzle)
-      let rowNum = solver.letterToNumber(coordinate[0].toUpperCase())
-      let colNum = parseInt(coordinate[1])
+      try {
+        const puzzleString = req.body.puzzle
+        if (!puzzleString) throw new Error('Required field missing')
 
-      if(!coordinate || !value || !puzzle){
-        res.json({ error: 'Required field(s) missing' })
-        return;
-      }else if( puzzle.length != 81){
-        res.json({ error: 'Expected puzzle to be 81 characters long' })
-        return;
-      }else if(puzzle.match(/[^0-9.]/g)){
-        res.json({ error: 'Invalid characters in puzzle' })
-        return;
-      }else if(coordinate.length != 2 || 
-        coordinateArray.indexOf(coordinate[0].toUpperCase()) < 0 ||
-        numbersArray.indexOf(coordinate[1]) < 0){
-          res.json({ error: 'Invalid coordinate'})
-          return;
-      }else if(value.length != 1 ||
-        numbersArray.indexOf(value) < 0){
-          res.json({ error: 'Invalid value' })
-          return;
-      }
-      else if(!solver.checkRowPlacement(grid, rowNum, colNum, value)
-      || !solver.checkColPlacement(grid, rowNum, colNum, value)
-      || !solver.checkRegionPlacement(grid, rowNum, colNum, value)){
-        let invalidCheckResponse = {valid:false, conflict:[]}
-        if(!solver.checkRowPlacement(grid, rowNum, colNum, value)){
-          // invalidCheckResponse.conflict.push("row")
-          console.log("bad row")
-        }
+        sudokuSolver.build(puzzleString)
+        const solution = sudokuSolver.solve()
+        if (!solution) throw new Error('Puzzle cannot be solved')
 
-        // res.json(invalidCheckResponse)
-      }else{
-        res.json({"valid":true})
-        return;
+        res.json({ solution })
+      } catch (error) {
+        return res.json({ error: error.message })
       }
 
     });
-    
-  app.route('/api/solve')
+
+  app.route('/api/check')
     .post((req, res) => {
-      const {puzzle} = req.body;
-      if(!puzzle){
-        res.json({ error: 'Required field missing' })
-        return;
-      }else if(puzzle.length != 81){
-        res.json({ error: 'Expected puzzle to be 81 characters long' })
-        return;
-      }else if(puzzle.match(/[^0-9.]/g)){
-        res.json({ error: 'Invalid characters in puzzle' })
-        return;
-      }else{
-        let grid = solver.stringToGrid(puzzle)
-        let result = solver.solve(grid)
-        if(result == false) {
-          res.json({ error: 'Puzzle cannot be solved' })
-          return;
-        }else{
-          console.log(result)
-          res.json({solution: result})
-          return;
-        }
-        
+      try {
+        const { puzzle, coordinate, value } = req.body
+        if (!puzzle || !coordinate || !value) throw new Error('Required field(s) missing')
+
+
+        sudokuSolver.build(puzzle)
+        const check = sudokuSolver.checkCoordinatePlacement(coordinate, value)
+
+        res.json({ ...check })
+      } catch (error) {
+        return res.json({ error: error.message })
       }
-      
-      
-      // console.log(solver.solve(puzzle))
-      // let gridded = solver.stringToGrid(puzzlesAndSolutions.puzzlesAndSolutions[0][0])
-      // console.log(gridded)
     });
 };
